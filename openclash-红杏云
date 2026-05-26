@@ -1,0 +1,268 @@
+#基础配置
+# 日期：2025-1-23 (于 2026-05 修复连环 QoS 阻断问题)
+# 作者：lin (Modified by AI)
+# 适用版本：适配使用mihomo内核的程序
+
+# 锚点 (还原为你最开始的配置)
+pr: &pr {type: select, proxies: [🚀 节点选择, ♻️ 自动切换, 🇭🇰 香港节点, 🇨🇳 台湾节点, 🇯🇵 日本节点, 🇸🇬 加坡节点,  🇺🇲 美国节点, 🕊️ 冷门节点, 🌐 全部节点, 🟢 直连]}
+pe: &pe {type: select, proxies: [🟢 直连, 🚀 节点选择, ♻️ 自动切换, 🇭🇰 香港节点, 🇨🇳 台湾节点, 🇯🇵 日本节点, 🇸🇬 加坡节点, 🇺🇲 美国节点, 🕊️ 冷门节点, 🌐 全部节点]}
+
+# 机场订阅
+proxy-providers:
+  红杏加速器:
+    type: http
+    interval: 21600
+    health-check:
+      enable: true
+      url: https://www.gstatic.com/generate_204
+      interval: 300
+    url: "https://admin.hongxingyunchange.com/sub?target=clash&url=https%3A%2F%2F106.55.228.246%3A36666%2Fhxvip%3Ftoken%3Df15db81f831b5085126b9a1debeec849&config=https%3A%2F%2Fraw.githubusercontent.com%2Flinhaixueyuan33%2Fxueyuan%2Frefs%2Fheads%2Fmain%2Frule%2Fclash_config.ini"
+  
+# 用于下载订阅时指定UA
+global-ua: clash.meta
+
+# 全局配置
+port: 7890
+socks-port: 7891
+redir-port: 7892
+mixed-port: 7893
+tproxy-port: 7894
+log-level: info
+ipv6: true
+allow-lan: true
+unified-delay: true   # 统一延迟
+tcp-concurrent: true
+
+geodata-mode: false
+
+geodata-loader: standard
+geo-auto-update: true
+geo-update-interval: 24
+geox-url:
+  # 修复：更换稳定加速源
+  geosite: "https://ghp.ci/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
+  mmdb: "https://ghp.ci/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.metadb"
+  geoip: "https://ghp.ci/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat"
+  asn: "https://ghp.ci/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"
+
+find-process-mode: strict
+global-client-fingerprint: chrome
+keep-alive-idle: 600
+keep-alive-interval: 30
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+sniffer:
+  enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  override-destination: true
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
+  force-domain:
+    - +.v2ex.com
+  skip-domain:
+    - "Mijia Cloud"
+    - "dlg.io.mi.com"
+    - "+.push.apple.com"
+    - "+.apple.com"
+
+# DNS模块
+dns:
+  enable: true
+  listen: 0.0.0.0:53
+  ipv6: false
+  respect-rules: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.0/15
+  fake-ip-filter-mode: blacklist
+  fake-ip-filter:
+    - geosite:private
+    - geosite:cn
+    - "+.lan"
+    - "connect.rom.miui.com"
+    - "+.miwifi.com"
+    - "+.ntp.org"
+    - "+.u-tools.cn"
+    - "+.mediatek.com"
+    - "+.cfprefer1.xyz"
+    - "+.wetab.link"
+    # QQ
+    - "localhost.ptlogin2.qq.com"
+    - "localhost.sec.qq.com"
+    # WeChat
+    - "localhost.work.weixin.qq.com"
+    - "+.weixin.qq.com"
+    - "+.wechat.com"
+    # Windows
+    - "time.windows.com"
+    - "+.msftconnecttest.com"
+    - "+.msftncsi.com"
+    - "+.wpsmail.net"
+    - "+.henzanapp.com"
+    - "+.pconline.com.cn"
+  
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+
+  proxy-server-nameserver:
+    - https://dns.alidns.com/dns-query
+    # 修复：必须保留可靠的外部 DNS 用于解析代理节点自身的域名
+    - https://1.1.1.1/dns-query
+
+  fallback:
+    # 修复：fallback 恢复纯净海外 DNS，确保不被国内投毒
+    - https://1.1.1.1/dns-query
+    - https://8.8.8.8/dns-query
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+    ipcidr:
+      - 240.0.0.0/4
+
+  nameserver-policy:
+    "geosite:cn,private":
+      - https://dns.alidns.com/dns-query
+      - https://doh.pub/dns-query
+
+proxies:
+  - name: "🟢 直连"
+    type: direct
+    udp: true
+
+# 策略组 (晚高峰抗压版：极致省流 + 容忍网络拥堵)
+proxy-groups:
+  # 【总控制台】这是你平时操作的地方
+  - {name: 🚀 节点选择, type: select, proxies: [♻️ 自动切换, 🇭🇰 香港节点, 🇨🇳 台湾节点, 🇯🇵 日本节点, 🇸🇬 加坡节点, 🇺🇲 美国节点, 🕊️ 冷门节点, 🌐 全部节点, 🟢 直连]}
+  
+  # 【后台故障转移组-异常自动跳】(去除原先卡就跳的url-test，统一用fallback)
+  - {name: ⚡ 台湾自动, type: fallback, include-all: true, filter: "(?i)台湾|twn|taiwan|台北|高雄", timeout: 800, interval: 60, lazy: true, url: "https://www.gstatic.com/generate_204" }
+  - {name: ⚡ 香港自动, type: fallback, include-all: true, filter: "(?i)香港|hk|hongkong|hong kong", timeout: 800, interval: 60, lazy: true, url: "https://www.gstatic.com/generate_204" }
+  - {name: ⚡ 日本自动, type: fallback, include-all: true, filter: "(?i)日本|jp|japan", timeout: 1000, interval: 60, lazy: true, url: "https://www.gstatic.com/generate_204" }
+  - {name: ⚡ 新加坡自动, type: fallback, include-all: true, filter: "(?i)新加坡|sg|singapore", timeout: 1000, interval: 60, lazy: true, url: "https://www.gstatic.com/generate_204" }
+  - {name: ⚡ 美国自动, type: fallback, include-all: true, filter: "(?i)美国|us|united states", timeout: 1500, interval: 60, lazy: true, url: "https://www.gstatic.com/generate_204" }
+
+  # 【跨区自动切换】
+  - {name: ♻️ 自动切换, type: fallback, proxies: [⚡ 台湾自动, ⚡ 香港自动, ⚡ 新加坡自动], timeout: 1200, interval: 60, lazy: true, url: "https://www.gstatic.com/generate_204"}
+
+  # ===== 【Google专属策略组】 =====
+  - {name: 🍀 Google自动, type: fallback, proxies: [⚡ 台湾自动, ⚡ 日本自动, ⚡ 美国自动], timeout: 2000, interval: 60, lazy: true, url: "https://www.gstatic.com/generate_204"}
+  # ====================================
+
+  - {name: 🌐 全部节点, type: select, include-all: true}
+  - {name: 📹 YouTube, <<: *pr}
+  - {name: 🍀 Google, type: select, proxies: [🍀 Google自动, 🚀 节点选择, 🇨🇳 台湾节点, 🇯🇵 日本节点, 🇺🇲 美国节点, 🇭🇰 香港节点, 🇸🇬 加坡节点, 🕊️ 冷门节点, 🌐 全部节点, 🟢 直连]}
+  - {name: 🎮️ Steam, <<: *pr}
+  - {name: 🤖 AI服务, <<: *pr}
+  - {name: 💬 ChatGPT, <<: *pr}
+  - {name: Ⓜ️ Copilot, <<: *pr}
+  - {name: 📢 谷歌FCM, <<: *pr}
+  - {name: 👨🏿‍💻 GitHub, <<: *pr}
+  - {name: 🪟 Microsoft, <<: *pe}
+  - {name: 🎵 TikTok, <<: *pr}
+  - {name: 📲 Telegram, <<: *pr}
+  - {name: 🕊️ Twitter, <<: *pr}
+  - {name: 🎥 NETFLIX, <<: *pr}
+  - {name: 🎥 Emby, <<: *pr}
+  - {name: 🎥 DisneyPlus, <<: *pr}
+  - {name: 🍎 Apple, <<: *pr}
+  - {name: 📺 国内媒体, <<: *pe}
+  - {name: 🌎 国外媒体, <<: *pr}
+  - {name: 🎯 全球直连, type: select, proxies: [🟢 直连, 🚀 节点选择, ♻️ 自动切换, 🕊️ 冷门节点, 🌐 全部节点]}
+  - {name: 🐟 漏网之鱼, <<: *pr}
+  
+  # 【前台手动组-人工介入+自动切换合体】(现在点进去，第一项是自动切换，底下是具体节点)
+  - {name: 🇭🇰 香港节点, type: select, proxies: [⚡ 香港自动], include-all: true, filter: "(?i)香港|hk|hongkong|hong kong" }
+  - {name: 🇨🇳 台湾节点, type: select, proxies: [⚡ 台湾自动], include-all: true, filter: "(?i)台湾|twn|taiwan|台北|高雄" }
+  - {name: 🇯🇵 日本节点, type: select, proxies: [⚡ 日本自动], include-all: true, filter: "(?i)日本|jp|japan" }
+  - {name: 🇸🇬 加坡节点, type: select, proxies: [⚡ 新加坡自动], include-all: true, filter: "(?i)新加坡|sg|singapore" }
+  - {name: 🇺🇲 美国节点, type: select, proxies: [⚡ 美国自动], include-all: true, filter: "(?i)美国|us|united states" }
+  - {name: 🕊️ 冷门节点, type: select, include-all: true, filter: "(?i)^(?!.*(港|hk|hongkong|hong kong|台|twn|taiwan|台北|高雄|日|jp|japan|新|sg|singapore|韩|kr|korea|美|us|united states|流量|套餐|官网|刷新|异常|重置)).*$" }
+
+rules:
+  # --- 修复：强杀 QUIC，防止 UDP 443 流量触发 GFW 秒封节点 ---
+  - AND,((NETWORK,UDP),(DST-PORT,443)),REJECT
+  # ----------------------------------------------------
+  
+  - RULE-SET,Lan,🎯 全球直连
+  - RULE-SET,direct,🎯 全球直连
+  - RULE-SET,Custom_Direct,🎯 全球直连
+  - RULE-SET,FCM,📢 谷歌FCM
+  - RULE-SET,googleCN,🎯 全球直连
+  - RULE-SET,GoogleCNProxyIP,🚀 节点选择
+  - RULE-SET,steamCN,🎯 全球直连
+  - RULE-SET,steamCDN,🎯 全球直连
+  - RULE-SET,telegram,📲 Telegram
+  - RULE-SET,Gemini,🤖 AI服务
+  - RULE-SET,Claude,🤖 AI服务
+  - RULE-SET,OpenAi,💬 ChatGPT
+  - RULE-SET,Copilot,Ⓜ️ Copilot
+  - RULE-SET,github,👨🏿‍💻 GitHub
+  - RULE-SET,Apple,🍎 Apple
+  - RULE-SET,Microsoft,🪟 Microsoft
+  - RULE-SET,Youtube,📹 YouTube
+  - RULE-SET,Google,🍀 Google
+  - RULE-SET,TikTok,🎵 TikTok
+  - RULE-SET,Twitter,🕊️ Twitter
+  - RULE-SET,Netflix,🎥 NETFLIX
+  - RULE-SET,Emby,🎥 Emby
+  - RULE-SET,DisneyPlus,🎥 DisneyPlus
+  - RULE-SET,steam,🎮️ Steam
+  - RULE-SET,ChinaMedia,📺 国内媒体
+  - RULE-SET,GlobalMedia,🌎 国外媒体
+  
+  - RULE-SET,ProxyGFWlist,🚀 节点选择
+  - RULE-SET,ChinaDomain,🎯 全球直连
+  - RULE-SET,ChinaCompanyIp,🎯 全球直连
+  - RULE-SET,ChinaIp,🎯 全球直连
+  - GEOSITE,CN,🎯 全球直连
+  - GEOIP,Lan,🎯 全球直连,no-resolve
+  - GEOIP,CN,🎯 全球直连,no-resolve
+  - MATCH,🐟 漏网之鱼
+
+rule-anchor:
+  lin: &lin { type: http, interval: 86400, behavior: classical, format: text }
+  ACL4SSR: &ACL4SSR { type: http, interval: 86400, behavior: classical, format: text }
+  blackmatrix7: &blackmatrix7 { type: http, interval: 86400, behavior: classical, format: text }
+  
+# 修复：移除被墙/限速的 ghproxy.net，替换为稳定的 raw.kkgithub.com直连加速镜像
+rule-providers:
+  Lan: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/Lan/Lan.list" }
+  direct: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/Direct/Direct.list" }
+  Custom_Direct: { <<: *lin, url: "https://raw.kkgithub.com/linhaixueyuan3/guizeji/refs/heads/main/rule/Custom_Direct.list" }
+  FCM: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/GoogleFCM/GoogleFCM.list" }
+  googleCN: { <<: *ACL4SSR, url: "https://raw.kkgithub.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/Ruleset/GoogleCN.list" }
+  GoogleCNProxyIP: { <<: *ACL4SSR, url: "https://raw.kkgithub.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/Ruleset/GoogleCNProxyIP.list" }
+  Gemini: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/Gemini/Gemini.list" }
+  Claude: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/Claude/Claude.list" }
+  OpenAi: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/OpenAI/OpenAI.list" }
+  Copilot: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/Copilot/Copilot.list" }
+  Youtube: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/YouTube/YouTube.list" }
+  Google: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/Google/Google.list" }
+  steamCDN: { <<: *lin, url: "https://raw.kkgithub.com/linhaixueyuan3/guizeji/refs/heads/main/rule/Steam_CDN.list" }
+  steam: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/Steam/Steam.list" }
+  github: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/GitHub/GitHub.list" }
+  telegram: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/Telegram/Telegram.list" }
+  Twitter: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/master/rule/Clash/Twitter/Twitter.list" }
+  Netflix: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/Netflix/Netflix.list" }
+  Emby: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/Emby/Emby.list" }
+  DisneyPlus: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/master/rule/Clash/Disney/Disney.list" }
+  steamCN: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/SteamCN/SteamCN.list" }
+  Microsoft: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/Microsoft/Microsoft.list" }
+  Apple: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/Apple/Apple.list" }
+  TikTok: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/Clash/TikTok/TikTok.list" }
+  ProxyGFWlist: { <<: *ACL4SSR, url: "https://raw.kkgithub.com/ACL4SSR/ACL4SSR/master/Clash/ProxyGFWlist.list" }
+  ChinaMedia: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/master/rule/Clash/ChinaMedia/ChinaMedia.list" }
+  GlobalMedia: { <<: *blackmatrix7, url: "https://raw.kkgithub.com/blackmatrix7/ios_rule_script/master/rule/Clash/GlobalMedia/GlobalMedia.list" }
+  ChinaDomain: { <<: *ACL4SSR, url: "https://raw.kkgithub.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/ChinaDomain.list" }
+  ChinaCompanyIp: { <<: *ACL4SSR, url: "https://raw.kkgithub.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/ChinaCompanyIp.list" }
+  ChinaIp: { <<: *ACL4SSR, url: "https://raw.kkgithub.com/ACL4SSR/ACL4SSR/refs/heads/master/Clash/ChinaIp.list" }
