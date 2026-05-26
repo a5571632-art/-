@@ -1,0 +1,59 @@
+ID:UID_PepXQwVUCcd9mY3YEJYKZv33dehW
+appToken:AT_w08wSOmbOL1g9AH4mQ9LRQgXSIGXcVcB
+新appToken： AT_q7nPtANg5uM36m7hfMjt5miFIeTwvWN7 
+ai的api:sk-4SEX4GwPjVIvtjpXwTj85WMLxt8VQYnNCtRsOORcXXa68sPs
+ai的网址：https://tokenhub.tencentmaas.com/v1
+
+
+#!/bin/sh
+
+# ==========================================
+# J1900 软路由 AI 行为分析脚本 (终极轻量直连+风控版)
+# ==========================================
+
+# --- 1. 配置信息 ---
+CLASH_SECRET="1989120"
+# AI 密钥与地址 (腾讯 MaaS 国内接口)
+AI_API_KEY="sk-4SEX4GwPjVIvtjpXwTj85WMLxt8VQYnNCtRsOORcXXa68sPs"
+AI_URL="https://tokenhub.tencentmaas.com/v1/chat/completions"
+# 微信推送 Token 与 UID
+APP_TOKEN="AT_w08wSOmbOL1g9AH4mQ9LRQgXSIGXcVcB"
+MY_UID="UID_PepXQwVUCcd9mY3YEJYKZv33dehW"
+
+# --- 2. 抓取时间与局域网设备数据 ---
+# 获取当前时间
+CURRENT_TIME=$(date "+%Y-%m-%d %H:%M:%S")
+
+# 【轻量优化】不保存大变量，直接流式提取，保护软路由内存
+# 提取排名前 5 的活跃设备 IP (过滤掉本机)并转为单行
+ACTIVE_IPS=$(curl -s -H "Authorization: Bearer $CLASH_SECRET" http://127.0.0.1:9090/connections | grep -oE '"sourceIP":"[^"]+"' | cut -d'"' -f4 | grep -v "127.0.0.1" | sort | uniq -c | sort -nr | head -n 5 | tr '\n' ',' | sed 's/,$//')
+
+# 提取排名前 10 的活跃域名并转为单行
+DOMAINS_CLEAN=$(curl -s -H "Authorization: Bearer $CLASH_SECRET" http://127.0.0.1:9090/connections | grep -oE '"host":"[^"]+"' | cut -d'"' -f4 | grep -v "^$" | sort | uniq -c | sort -nr | head -n 10 | tr '\n' ',' | sed 's/,$//')
+
+if [ -z "$DOMAINS_CLEAN" ]; then
+    echo "当前无活跃连接，跳过分析。"
+    exit 0
+fi
+
+# --- 3. 调用 AI 进行深度风控分析 ---
+# 结构化 Prompt，强制 AI 进行逐机画像与流量异常判定
+PROMPT="你是一位家庭网络风控专家。当前时间是：${CURRENT_TIME}。目前活跃设备IP及连接数：${ACTIVE_IPS}；主要访问域名：${DOMAINS_CLEAN}。请完成以下两项任务：\\n1. 【逐机动态画像】：分点列出，结合域名特征推测每个IP具体在做什么。你可以代入家庭场景进行逻辑推演，例如是否是大人在处理工作，或者女儿在看视频。\\n2. 【流量异常评估】：结合当前时间与连接数，明确给出当前流量状态的定性（正常 / 疑似异常），并简述风控判断理由（如：深夜突发大流量、异常未知请求等）。\\n注意：严禁出现双引号，排版要清晰可读，可适当使用Emoji。"
+
+AI_PAYLOAD=$(printf '{"model": "deepseek-v3-0324", "messages": [{"role": "user", "content": "%s"}]}' "$PROMPT")
+
+# 【直连优化】删除 -x 代理参数，走国内宽带直连，增加 5 秒超时防卡死
+RAW_AI_REPLY=$(curl -k --connect-timeout 5 -s "$AI_URL" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $AI_API_KEY" \
+  -d "$AI_PAYLOAD")
+
+# 提取 AI 的回答内容
+FINAL_MSG=$(echo "$RAW_AI_REPLY" | awk -F'"content":"' '{print $2}' | awk -F'"' '{print $1}')
+
+if [ -z "$FINAL_MSG" ]; then
+    FINAL_MSG="AI未返回有效内容，原始数据：$RAW_AI_REPLY"
+fi
+
+# 剔除双引号和换行符 (保留 JSON 格式)
+FINAL_MSG_SAFE=$(echo "$FINAL_MSG" | tr -d '"' | tr -d '\n' | tr -d '\r')
